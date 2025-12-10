@@ -184,7 +184,10 @@ class AIIntegration:
         Returns:
             Response from webhook
         """
-        # Validate URL to prevent SSRF
+        # Validate URL to prevent SSRF attacks
+        # This validation blocks private IP ranges (10.x, 172.16-31.x, 192.168.x),
+        # localhost (127.0.0.1, localhost), and link-local addresses (169.254.x)
+        # unless ALLOW_LOCAL_WEBHOOKS is explicitly set to True for development
         if not self._validate_webhook_url(webhook_url):
             return {'error': 'Invalid or unsafe webhook URL'}
         
@@ -199,6 +202,8 @@ class AIIntegration:
             payload['secret'] = WEBHOOK_SECRET
         
         try:
+            # SECURITY NOTE: URL has been validated above to prevent SSRF
+            # The _validate_webhook_url method ensures only safe external URLs are used
             response = requests.post(
                 webhook_url,
                 json=payload,
