@@ -177,9 +177,8 @@ class AIIntegration:
         for candidate_id in candidate_ids:
             try:
                 # Get candidate from database
-                candidate = self.data_manager.session.query(
-                    self.data_manager.session.query(self.data_manager.session).all()[0]
-                ).get(candidate_id)
+                from models import Candidate
+                candidate = self.data_manager.session.query(Candidate).get(candidate_id)
                 
                 if not candidate:
                     logger.warning(f"Candidate {candidate_id} not found")
@@ -291,8 +290,7 @@ class AIIntegration:
         
         Args:
             job_search_id: Job search ID
-            contacted_only: Only return already contacted candidates
-            contacted_only: Only return candidates not yet contacted
+            contacted_only: If True, return already contacted candidates; if False, return not yet contacted
             interested_only: Only return interested candidates
             
         Returns:
@@ -305,12 +303,12 @@ class AIIntegration:
         )
         
         if contacted_only:
-            query = query.filter(Candidate.contacted == True)
+            query = query.filter(Candidate.contacted.is_(True))
         else:
-            query = query.filter(Candidate.contacted == False)
+            query = query.filter(Candidate.contacted.is_(False))
         
         if interested_only:
-            query = query.filter(Candidate.interested == True)
+            query = query.filter(Candidate.interested.is_(True))
         
         candidates = query.all()
         return [c.id for c in candidates]
