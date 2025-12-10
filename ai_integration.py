@@ -121,18 +121,73 @@ class AIIntegration:
             logger.error(f"Error sending to make.com: {e}")
             return {'error': str(e)}
     
+    def _validate_webhook_url(self, url: str) -> bool:
+        """
+        Validate webhook URL to prevent SSRF attacks.
+        
+        Args:
+            url: URL to validate
+            
+        Returns:
+            True if URL is safe, False otherwise
+        """
+        from urllib.parse import urlparse
+        from config import ALLOW_LOCAL_WEBHOOKS
+        
+        try:
+            parsed = urlparse(url)
+            
+            # Only allow https and http schemes
+            if parsed.scheme not in ['http', 'https']:
+                logger.error(f"Invalid URL scheme: {parsed.scheme}")
+                return False
+            
+            # Block private IP ranges and localhost (unless explicitly allowed for dev)
+            hostname = parsed.hostname
+            if not hostname:
+                return False
+            
+            hostname_lower = hostname.lower()
+            
+            # Check for localhost/private IPs
+            is_localhost = any(hostname_lower.startswith(h) for h in [
+                'localhost', '127.0.0.1', '0.0.0.0', '169.254.', '::1', 'fe80:'
+            ])
+            
+            is_private = (
+                hostname_lower.startswith('10.') or
+                hostname_lower.startswith('192.168.') or
+                any(hostname_lower.startswith(f'172.{i}.') for i in range(16, 32))
+            )
+            
+            if is_localhost or is_private:
+                if not ALLOW_LOCAL_WEBHOOKS:
+                    logger.error(f"Blocked private/localhost address: {hostname}. Set ALLOW_LOCAL_WEBHOOKS=True for development.")
+                    return False
+                else:
+                    logger.warning(f"Allowing private/localhost address for development: {hostname}")
+            
+            return True
+        except Exception as e:
+            logger.error(f"Error validating URL: {e}")
+            return False
+    
     def send_to_webhook(self, webhook_url: str, candidate_data: Dict, script: str) -> Dict:
         """
         Send candidate data to a custom webhook URL.
         
         Args:
-            webhook_url: Custom webhook URL
+            webhook_url: Custom webhook URL (must be https/http and not private IP)
             candidate_data: Candidate information
             script: Call script to use
             
         Returns:
             Response from webhook
         """
+        # Validate URL to prevent SSRF
+        if not self._validate_webhook_url(webhook_url):
+            return {'error': 'Invalid or unsafe webhook URL'}
+        
         payload = {
             'candidate': candidate_data,
             'script': script,

@@ -34,6 +34,10 @@ WEBHOOK_SECRET = os.getenv('WEBHOOK_SECRET', '')
 N8N_WEBHOOK_URL = os.getenv('N8N_WEBHOOK_URL', '')
 MAKE_WEBHOOK_URL = os.getenv('MAKE_WEBHOOK_URL', '')
 
+# Security: For development, set ALLOW_LOCAL_WEBHOOKS=True to allow localhost URLs
+# In production, this should always be False to prevent SSRF attacks
+ALLOW_LOCAL_WEBHOOKS = os.getenv('ALLOW_LOCAL_WEBHOOKS', 'False').lower() == 'true'
+
 # Call script template
 DEFAULT_CALL_SCRIPT = """
 Hello {candidate_name},
