@@ -2,6 +2,8 @@
 
 A Python web scraping utility for Naukri.com with REST API, database management, and AI integration via webhooks.
 
+> **Quick Start**: See [QUICKSTART.md](QUICKSTART.md) for a 5-minute setup guide!
+
 ## Features
 
 - 🔍 **Web Scraping**: Scrape job listings from Naukri.com
